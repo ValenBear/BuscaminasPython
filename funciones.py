@@ -491,11 +491,11 @@ def cronometrar_juego(timers:dict) -> int:  # VERIFICAR SI LO QUE RETORNA ES UN 
 
     if timers["tiempo_arranque"] != 0:
         if timers["tiempo_victoria"] == 0 and timers["tiempo_derrota"] == 0:
-            tiempo = 0 = (pg.time.get_ticks() - timers["tiempo_arranque"]) // 1000
+            tiempo = (pg.time.get_ticks() - timers["tiempo_arranque"]) // 1000
         else:
             if timers["tiempo_victoria"] != 0:
-                tiempo = 0 = (timers["tiempo_victoria"] - timers["tiempo_arranque"]) // 1000
+                tiempo = (timers["tiempo_victoria"] - timers["tiempo_arranque"]) // 1000
             else:
-                tiempo = 0 = (timers["tiempo_derrota"] - timers["tiempo_arranque"]) // 1000
+                tiempo = (timers["tiempo_derrota"] - timers["tiempo_arranque"]) // 1000
 
     return tiempo
