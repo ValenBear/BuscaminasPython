@@ -29,6 +29,7 @@ MATRIZ = "matriz"
 #Datos
 DATOS = "datos"
 BOMBAS = "bombas"
+BANDERAS = "banderas"
 ESTADO_PARTIDA = "estado_partida"
 #Estados de Partida
 VICTORIA = "victoria"

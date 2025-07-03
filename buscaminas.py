@@ -195,7 +195,7 @@ while corriendo:
                         for j in range(len(tablero[MATRIZ][i])):
                             celda = tablero[MATRIZ][i][j]
                             if celda[RECT].collidepoint(evento.pos) == True:
-                                tablero[DATOS][BOMBAS] += poner_bandera(pantalla, celda, tablero, GRIS_OSCURO, NEGRO, bandera)   
+                                tablero[DATOS][BANDERAS] += poner_bandera(pantalla, celda, tablero, GRIS_OSCURO, NEGRO, bandera)   
 
         if evento.type == pg.KEYDOWN and tablero[DATOS][ESTADO_PARTIDA] == VICTORIA:
             if evento.key == pg.K_BACKSPACE:
@@ -235,8 +235,6 @@ while corriendo:
         
         timer = fuente_titulo.render(str(timers[TIEMPO_TRANSCURRIDO]), True, NEGRO)
         usuario = fuente.render(str(texto_ingresado), True, NEGRO)
-        
-        icono_y_texto_en_boton(pantalla, tablero, bandera, boton_banderas, NEGRO)
         
         dibujar_boton(pantalla, boton_volver_juego, GRIS_CLARO)
         dibujar_boton(pantalla, boton_facil, GRIS_CLARO)

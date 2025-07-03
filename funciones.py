@@ -119,7 +119,7 @@ def contar_y_revelar_celda(tablero:dict, i:int , j:int, pantalla:pg.Surface, col
         for k in range(i - 1, i + 2):
             for l in range(j - 1, j + 2):
                 if (0 <= k and k < filas) and (0 <= l and l < columnas):
-                    if bombas == 0 and matriz[i][j]["revelada"] == True and matriz[i][j]["valor"] == 0:
+                    if bombas == 0 and matriz[i][j]["revelada"] == True and matriz[i][j]["valor"] == 0 and matriz[k][l]["bandera"] == False:
                         matriz[k][l]["valor"] = contar_y_revelar_celda(tablero, k, l, pantalla, color_relleno, color_borde, bomba)
                     
         pg.draw.rect(pantalla, color_relleno, celda_rect)
@@ -151,14 +151,17 @@ def crear_tablero(dificultad:str, dimensiones_alto:int) -> dict:
             columnas = 8
             filas = 8
             bombas = 10
+            banderas = 10
         case "Medio":
             columnas = 16
             filas = 16
             bombas = 50
+            banderas = 50
         case "Dificil":
             columnas = 24
             filas = 24
             bombas = 120
+            banderas = 120
         case _:
             print("ERROR")
 
@@ -173,6 +176,7 @@ def crear_tablero(dificultad:str, dimensiones_alto:int) -> dict:
                 "ancho_celda" : ancho_celda,
                 "alto_celda" : alto_celda,
                 "bombas": bombas,
+                "banderas": banderas,
                 "columnas":columnas,
                 "filas": filas,
                 "estado_partida": "jugando"
@@ -289,7 +293,7 @@ def icono_y_texto_en_boton(pantalla:pg.Surface, tablero:pg.Surface, icono:pg.Sur
     """
 
     fuente = pg.font.Font(None, math.trunc(tablero["datos"]["columnas"] * tablero["datos"]["ancho_celda"]  * 0.085)) 
-    relleno = fuente.render(str(tablero["datos"]["bombas"]), True, color)
+    relleno = fuente.render(str(tablero["datos"]["banderas"]), True, color)
 
     pantalla.blit(relleno, (boton.x + boton.w // 2 - icono.get_width(), boton.y  + boton.h // 2 - relleno.get_height() // 2)) 
     pantalla.blit(icono, (boton.x + boton.w // 2 + icono.get_width() * 0.25, boton.y  + boton.h // 2 - icono.get_height() // 2))
@@ -315,9 +319,10 @@ def poner_bandera(pantalla:pg.Surface, celda:dict, tablero:dict, color_relleno:t
     retorno = 0
 
     if celda["revelada"] == False and celda["bandera"] == False:
-        celda["bandera"] = True
-        pantalla.blit(bandera_escalada, (celda["rect"].x + celda["rect"].w // 2 - bandera_escalada.get_width() // 2, celda["rect"].y  + celda["rect"].h // 2 - bandera_escalada.get_height() // 2))
-        retorno = -1
+        if tablero["datos"]["banderas"] > 0:
+            celda["bandera"] = True
+            pantalla.blit(bandera_escalada, (celda["rect"].x + celda["rect"].w // 2 - bandera_escalada.get_width() // 2, celda["rect"].y  + celda["rect"].h // 2 - bandera_escalada.get_height() // 2))
+            retorno = -1
     elif celda["bandera"] == True:
         celda["bandera"] = False
         pg.draw.rect(pantalla, color_relleno, celda["rect"])
