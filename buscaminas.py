@@ -88,7 +88,7 @@ sonido_pausado = False
 sonido_juego = mixer.Sound('./sonidos/sonido_juego.mp3')
 sonido_derrota = mixer.Sound('./sonidos/sonido_derrota.mp3')
 sonido_victoria = mixer.Sound('./sonidos/sonido_victoria.mp3')
-sonido_juego.play() # REVISAR
+sonido_juego.play()
 sonido_juego.set_volume(volumen_sonido)
 
 

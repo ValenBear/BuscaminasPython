@@ -411,9 +411,15 @@ def obtener_puntajes_por_dificultad() -> dict:
     return resultado
 
 
-def hacer_top_puntajes(puntajes:dict) -> dict: # HACER DOCUMENTACION
+def hacer_top_puntajes(puntajes:dict) -> dict:
 
-    """"""
+    """
+    Arma un diccionario con los distintos tops segun dificultad.
+    Parametro:
+        puntajes (dict): diccionario con los puntajes (Nombre,Dificultad,Puntaje).
+    Retorna:
+        resultado (dict): diccionario con las 3 listas distintas de puntajes segundo dificultad.
+    """
 
     titulos = ["Facil", "Medio", "Dificil"]
     resultado = {}
