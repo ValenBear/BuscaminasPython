@@ -1,16 +1,13 @@
-#AGREGAR SONIDO DE VICTORIA
-#SI HAY DOS PUNTAJES CON EL MISMO NOMBRE, SE GUARDA EL DE MEJOR PUNTUACION
-#AGREGAR SONIDO DE DERROTA
-
-
 from funciones import *
 from constantes import *
 import pygame as pg
+import pygame.mixer as mixer
 
 
-pg.init()   # Inicializa pygame
+pg.init()  
+mixer.init()
 pantalla = pg.display.set_mode((DIMENSIONES[ANCHO], DIMENSIONES[ALTO]))
-pg.display.set_caption(TITULO) # Crea el titulo del juego
+pg.display.set_caption(TITULO) 
 
 
 #Imagenes
@@ -23,14 +20,15 @@ titulo = pg.transform.scale(pg.image.load("img/titulo.png"), (DIMENSIONES[ANCHO]
 bandera = pg.transform.scale(pg.image.load("img/bandera.png"), (DIMENSIONES[ANCHO] * 0.05, DIMENSIONES[ANCHO] * 0.05))
 bomba = pg.transform.scale(pg.image.load("img/bomba.png"), (DIMENSIONES[ANCHO] * 0.05, DIMENSIONES[ANCHO] * 0.05))
 
-
 #Rectangulos
-rectangulo_x_centrado = (DIMENSIONES[ANCHO] // 2) - ((DIMENSIONES[ANCHO] // 4) // 2)
-rectangulo_chico_x_centrado = (DIMENSIONES[ANCHO] // 2) - ((DIMENSIONES[ANCHO] // 7) // 2)
-rectangulo_y_centrado = (DIMENSIONES[ALTO] // 2)
-rectangulo_x_izquierda = (DIMENSIONES[ANCHO] * 0.1) - ((DIMENSIONES[ANCHO] // 4) // 2)
-rectangulo_x_derecha = (DIMENSIONES[ANCHO] * 0.99) - ((DIMENSIONES[ANCHO] // 4) // 2)
+rectangulo_x_centrado = (DIMENSIONES[ANCHO] * 0.5) - ((DIMENSIONES[ANCHO] // 4) * 0.5)
+rectangulo_chico_x_centrado = (DIMENSIONES[ANCHO] * 0.5) - ((DIMENSIONES[ANCHO] // 7) * 0.5)
+rectangulo_y_centrado = (DIMENSIONES[ALTO] * 0.5)
+rectangulo_x_izquierda = (DIMENSIONES[ANCHO] * 0.1) - ((DIMENSIONES[ANCHO] // 4) * 0.5)
+rectangulo_x_derecha = (DIMENSIONES[ANCHO] * 0.99) - ((DIMENSIONES[ANCHO] // 4) * 0.5)
 rectangulo_y_up = (DIMENSIONES[ALTO] * 0.015)
+rectangulo_volumen = (DIMENSIONES[ANCHO] * 0.5) - ((DIMENSIONES[ANCHO] // 13) * 0.5)
+rectangulo_volumen_mas = (DIMENSIONES[ANCHO] * 0.5) + ((DIMENSIONES[ANCHO] // 4) * 0.5)
 
 
 #Botones Inicio
@@ -41,8 +39,11 @@ boton_salir = pg.Rect(rectangulo_x_centrado, rectangulo_y_centrado + (DIMENSIONE
 
 
 #Botones Configuracion
-boton_pantalla = pg.Rect(rectangulo_x_centrado, rectangulo_y_centrado, DIMENSIONES[ANCHO] // 4, DIMENSIONES[ALTO] // 10 )
+boton_pantalla = pg.Rect(rectangulo_x_centrado, rectangulo_y_centrado + (DIMENSIONES[ALTO] * 0.125), DIMENSIONES[ANCHO] // 4, DIMENSIONES[ALTO] // 10 )
 boton_volver = pg.Rect(rectangulo_x_centrado, rectangulo_y_centrado + ( + DIMENSIONES[ALTO] * 0.125) * 3, DIMENSIONES[ANCHO] // 4, DIMENSIONES[ALTO] // 10 ) #Tambien en puntajes
+boton_volumen_menos = pg.Rect(rectangulo_x_centrado, rectangulo_y_centrado + (DIMENSIONES[ALTO] * 0.125) * 2, DIMENSIONES[ANCHO] // 13, DIMENSIONES[ALTO] // 10)
+boton_volumen_pausa = pg.Rect(rectangulo_volumen, rectangulo_y_centrado + (DIMENSIONES[ALTO] * 0.125) * 2, DIMENSIONES[ANCHO] // 13, DIMENSIONES[ALTO] // 10)
+boton_volumen_mas = pg.Rect(rectangulo_volumen_mas - DIMENSIONES[ANCHO] // 13, rectangulo_y_centrado + (DIMENSIONES[ALTO] * 0.125) * 2, DIMENSIONES[ANCHO] // 13, DIMENSIONES[ALTO] // 10)
 
 
 #Botones Juego
@@ -75,15 +76,26 @@ medio = fuente.render(MEDIO, True, NEGRO)
 dificil = fuente.render(DIFICIL, True, NEGRO)
 banderas = fuente.render("0", True, NEGRO)
 reiniciar = fuente.render("Reiniciar", True, NEGRO)
-
+texto_volumen_menos = fuente.render("-", True, NEGRO)
+texto_volumen_mas = fuente.render("+", True, NEGRO)
 
 #Bucle Principal
 corriendo = True
 primer_click = False
+sonido_pausado = False
 
+#sonidos
+sonido_juego = mixer.Sound('./sonidos/sonido_juego.mp3')
+sonido_derrota = mixer.Sound('./sonidos/sonido_derrota.mp3')
+sonido_victoria = mixer.Sound('./sonidos/sonido_victoria.mp3')
+sonido_juego.play() # REVISAR
+sonido_juego.set_volume(volumen_sonido)
+
+
+dict_puntajes = obtener_puntajes_por_dificultad()
+    
 
 while corriendo:
-
     for evento in pg.event.get():
         if evento.type == pg.QUIT:
             pg.quit()
@@ -105,7 +117,6 @@ while corriendo:
                         tablero = dibujar_matriz(DIMENSIONES,tablero,pantalla, GRIS_CLARO, GRIS_OSCURO, NEGRO)
                         pantalla_actual = JUEGO_SCREEN
                     elif boton_puntajes.collidepoint(evento.pos) == True:
-                        dict_puntajes = obtener_puntajes_por_dificultad()
                         pantalla_actual = PUNTAJES_SCREEN
                     elif boton_configuracion.collidepoint(evento.pos) == True:
                         pantalla_actual = CONFIGURACION_SCREEN
@@ -125,6 +136,24 @@ while corriendo:
                         texto_pantalla = fuente.render(tipo_pantalla, True, NEGRO)
                     elif boton_volver.collidepoint(evento.pos) == True:
                         pantalla_actual = INICIO_SCREEN
+                    elif boton_volumen_menos.collidepoint(evento.pos) == True:
+                        if volumen_sonido > 0.05:
+                            volumen_sonido -= 0.05
+                            volumen_sonido = round(volumen_sonido, 2)   # Usamos Round porque sino nos da muchos decimales y no funciona el > 0.05
+                        sonido_juego.set_volume(volumen_sonido)
+                    elif boton_volumen_mas.collidepoint(evento.pos) == True:
+                        if volumen_sonido < 0.4:
+                            volumen_sonido += 0.05
+                            volumen_sonido = round(volumen_sonido, 2)
+                        sonido_juego.set_volume(volumen_sonido)
+                    elif boton_volumen_pausa.collidepoint(evento.pos) == True:
+                        if sonido_pausado == False:  
+                            sonido_juego.set_volume(0)
+                            sonido_pausado = True
+                        else:
+                            sonido_juego.set_volume(volumen_sonido)
+                            sonido_pausado = False
+
 
                         
             elif pantalla_actual == JUEGO_SCREEN:
@@ -181,14 +210,14 @@ while corriendo:
                                         primer_click = True
                                         timers[TIEMPO_ARRANQUE] = pg.time.get_ticks()
                                     celda[VALOR] = contar_y_revelar_celda(tablero, i , j, pantalla, GRIS_CLARO, GRIS_OSCURO, bomba)                                    
-                                    if celda[VALOR] == "X":
+                                    if tablero[DATOS][ESTADO_PARTIDA] == DERROTA:
                                         mostrar_bombas(tablero, bomba, pantalla, NEGRO, ROJO)
                                         timers[TIEMPO_DERROTA] = pg.time.get_ticks()
-                                        # AGREGAR ACA SONIDO DERROTA
+                                        sonido_derrota.play()
                                     if verificar_victoria(tablero) and primer_click:
                                         tablero[DATOS][ESTADO_PARTIDA] = VICTORIA
                                         timers[TIEMPO_VICTORIA] = pg.time.get_ticks()
-                                        # AGREGAR ACA SONIDO VICTORIA
+                                        sonido_victoria.play()
 
                 elif evento.button == 3 and tablero[DATOS][ESTADO_PARTIDA] == JUGANDO:
                     for i in range(len(tablero[MATRIZ])):
@@ -197,28 +226,45 @@ while corriendo:
                             if celda[RECT].collidepoint(evento.pos) == True:
                                 tablero[DATOS][BANDERAS] += poner_bandera(pantalla, celda, tablero, GRIS_OSCURO, NEGRO, bandera)   
 
-        if evento.type == pg.KEYDOWN and tablero[DATOS][ESTADO_PARTIDA] == VICTORIA:
-            if evento.key == pg.K_BACKSPACE:
-                texto_ingresado = texto_ingresado[0:-1]
-            elif evento.key == pg.K_RETURN:
-                ganador = [texto_ingresado, dificultad, timers[TIEMPO_TRANSCURRIDO]]
-                with open("puntajes.csv", "a") as puntajes_escritura:
-                    texto = ",".join(str(i) for i in ganador)
-                    puntajes_escritura.write(texto + "\n")
-                pantalla_actual = INICIO_SCREEN
-                primer_click = False
-                tablero[DATOS][ESTADO_PARTIDA] = EN_MENU
-                reiniciar_temporizador(timers)
-                texto_ingresado = ""
-            else:
-                if len(texto_ingresado) < 10:
-                    texto_ingresado += evento.unicode
+        if evento.type == pg.KEYDOWN and len(tablero) != 0:
+            if tablero[DATOS][ESTADO_PARTIDA] == VICTORIA:
+                if evento.key == pg.K_BACKSPACE:
+                    texto_ingresado = texto_ingresado[0:-1]
+
+                elif evento.key == pg.K_RETURN or evento.key == pg.K_KP_ENTER:
+                    ganador = [texto_ingresado, dificultad, timers[TIEMPO_TRANSCURRIDO]]
+                    nombre_existente = False
+                    for i in range(len(dict_puntajes[dificultad])):
+                        nombre, puntaje = dict_puntajes[dificultad][i]
+                        if nombre == texto_ingresado:
+                            nombre_existente = True
+                            if ganador[2] < puntaje: 
+                                dict_puntajes[dificultad][i] = (texto_ingresado, ganador[2])
+                            break
+                    if not nombre_existente:
+                        dict_puntajes[dificultad].append((texto_ingresado, ganador[2]))
+
+                    with open("puntajes.csv", "w") as archivo:
+                        archivo.write("NOMBRE,DIFICULTAD,PUNTAJE\n")
+                        for dificultad_top in dict_puntajes:
+                            for nombre, puntaje in dict_puntajes[dificultad_top]:
+                                archivo.write(f"{nombre},{dificultad_top},{puntaje}\n")
+
+                    pantalla_actual = INICIO_SCREEN
+                    primer_click = False
+                    tablero[DATOS][ESTADO_PARTIDA] = EN_MENU
+                    reiniciar_temporizador(timers)
+                    texto_ingresado = ""
+
+                else:
+                    if len(texto_ingresado) < 10:
+                        texto_ingresado += evento.unicode
             
 
     if pantalla_actual == INICIO_SCREEN:
 
         pantalla.blit(fondo_inicio, (0,0))
-        pantalla.blit(titulo,(DIMENSIONES[ANCHO] * 0.5 - titulo.get_width() // 2, (DIMENSIONES[ALTO] * 0.5) * 0.5 - titulo.get_height() // 2))
+        pantalla.blit(titulo,(DIMENSIONES[ANCHO] * 0.5 - titulo.get_width() * 0.5, (DIMENSIONES[ALTO] * 0.5) * 0.5 - titulo.get_height() * 0.5))
         
         dibujar_boton(pantalla, boton_jugar, GRIS_CLARO)
         dibujar_boton(pantalla, boton_configuracion, GRIS_CLARO)
@@ -257,22 +303,35 @@ while corriendo:
 
         if tablero[DATOS][ESTADO_PARTIDA] == VICTORIA:
             pantalla.blit(fondo_victoria, (0,0))
-            pantalla.blit(timer, (DIMENSIONES[ANCHO] // 2 - timer.get_width() // 2, DIMENSIONES[ALTO] * 0.575 - timer.get_height() // 2)) 
+            pantalla.blit(timer, (DIMENSIONES[ANCHO] * 0.5 - timer.get_width() * 0.5, DIMENSIONES[ALTO] * 0.575 - timer.get_height() * 0.5)) 
             boton_input = renderizar_input(usuario, DIMENSIONES)
             dibujar_boton(pantalla, boton_input, CREMA_RELLENO)
             pg.draw.rect(pantalla, CREMA_BORDE, boton_input, 2, 10)
-            usuario_rect = usuario.get_rect(center=boton_input.center)
-            pantalla.blit(usuario, usuario_rect)
+            centrar_en_boton(pantalla, usuario, boton_input)
         
 
     elif pantalla_actual == CONFIGURACION_SCREEN:
 
         pantalla.blit(fondo_configuracion, (0,0))
 
+        if sonido_juego.get_volume() == 0:
+            texto_volumen_pausa = fuente.render("Play", True, NEGRO)
+        else:
+            texto_volumen_pausa = fuente.render("Mute", True, NEGRO)
+
         dibujar_boton(pantalla, boton_pantalla, GRIS_CLARO)
         dibujar_boton(pantalla, boton_volver, GRIS_CLARO)
+        dibujar_boton(pantalla, boton_volumen_menos, GRIS_CLARO)
+        dibujar_boton(pantalla, boton_volumen_pausa, GRIS_CLARO)
+        dibujar_boton(pantalla, boton_volumen_mas, GRIS_CLARO)
+        centrar_en_boton(pantalla, texto_volumen_menos, boton_volumen_menos)
+        centrar_en_boton(pantalla, texto_volumen_pausa, boton_volumen_pausa)
+        centrar_en_boton(pantalla, texto_volumen_mas, boton_volumen_mas)
         centrar_en_boton(pantalla, texto_pantalla, boton_pantalla)
         centrar_en_boton(pantalla, volver, boton_volver)
+
+        
+
 
 
     elif pantalla_actual == PUNTAJES_SCREEN:
@@ -281,7 +340,8 @@ while corriendo:
 
         dibujar_boton(pantalla, boton_volver, GRIS_CLARO)
         centrar_en_boton(pantalla, volver, boton_volver)
-        renderizar_puntajes(pantalla,fuente_puntajes,dict_puntajes,NEGRO,DIMENSIONES)
+        tops = hacer_top_puntajes(dict_puntajes)
+        renderizar_puntajes(pantalla,fuente_puntajes,tops,NEGRO,DIMENSIONES)
 
         
 

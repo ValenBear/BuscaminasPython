@@ -1,5 +1,4 @@
 import random
-import math
 import pygame as pg
 
 pg.init()
@@ -126,7 +125,7 @@ def contar_y_revelar_celda(tablero:dict, i:int , j:int, pantalla:pg.Surface, col
         pg.draw.rect(pantalla, color_borde, celda_rect, 1)
 
         if bombas != 0:
-            fuente = pg.font.Font(None, math.trunc(tablero["datos"]["ancho_celda"] * 0.9)) 
+            fuente = pg.font.Font(None, int(tablero["datos"]["ancho_celda"] * 0.9)) 
             texto_celda = fuente.render(str(bombas), True, colores_cuenta_minas[bombas - 1])
             pantalla.blit(texto_celda, (celda_rect.x + celda_rect.w // 2 - texto_celda.get_width() // 2, celda_rect.y  + celda_rect.h // 2 - texto_celda.get_height() // 2)) 
     
@@ -214,11 +213,8 @@ def dibujar_matriz(dimensiones:dict, tablero:dict, pantalla:pg.Surface, color_ma
             x = j * tablero["datos"]["ancho_celda"] + margen_x
             y = i * tablero["datos"]["alto_celda"] + margen_y
             rect_celda = pg.Rect(x, y, tablero["datos"]["ancho_celda"], tablero["datos"]["alto_celda"])
-            # Dibujar celda
-
             pg.draw.rect(pantalla, color_relleno_celda, rect_celda)
             pg.draw.rect(pantalla, color_borde_celda, rect_celda, 1)
-            # Dibujar contenido (texto)
             celda = {
                 "valor": tablero["matriz"][i][j],
                 "revelada": False,
@@ -292,7 +288,7 @@ def icono_y_texto_en_boton(pantalla:pg.Surface, tablero:pg.Surface, icono:pg.Sur
         Nada.
     """
 
-    fuente = pg.font.Font(None, math.trunc(tablero["datos"]["columnas"] * tablero["datos"]["ancho_celda"]  * 0.085)) 
+    fuente = pg.font.Font(None, int(tablero["datos"]["columnas"] * tablero["datos"]["ancho_celda"]  * 0.085)) 
     relleno = fuente.render(str(tablero["datos"]["banderas"]), True, color)
 
     pantalla.blit(relleno, (boton.x + boton.w // 2 - icono.get_width(), boton.y  + boton.h // 2 - relleno.get_height() // 2)) 
@@ -347,7 +343,7 @@ def verificar_victoria(tablero:dict) -> bool:
     for i in range(len(tablero["matriz"])):
         for j in range(len(tablero["matriz"][i])):
             celda = tablero["matriz"][i][j]
-            if celda["valor"] != "X" and not celda["revelada"]:
+            if celda["valor"] != "X" and celda["revelada"] == False:
                 retorno = False
 
     return retorno
@@ -392,7 +388,7 @@ def reiniciar_temporizador(timers:dict) -> None:
         timers[tiempo] = 0
     
 
-def obtener_puntajes_por_dificultad() -> dict:  # VER ESTA SI HAY QUE PASAR EL PARAMETRO O ESTA BIEN ASI
+def obtener_puntajes_por_dificultad() -> dict:
     
     """
     Busca en un archivo ".csv" los distintos puntajes y nombres y lo retorna en un diccionario.
@@ -410,9 +406,32 @@ def obtener_puntajes_por_dificultad() -> dict:  # VER ESTA SI HAY QUE PASAR EL P
             nombre, dificultad, puntaje = linea.strip().split(",")
             puntaje = int(puntaje)
             if dificultad in resultado:
-                resultado[dificultad].append((nombre, puntaje))
+                resultado[dificultad].append((nombre, puntaje ))
 
     return resultado
+
+
+def hacer_top_puntajes(puntajes:dict) -> dict: # HACER DOCUMENTACION
+
+    """"""
+
+    titulos = ["Facil", "Medio", "Dificil"]
+    resultado = {}
+
+    for i in range(len(titulos)):
+        titulo = titulos[i]
+        lista = puntajes.get(titulo, [])
+
+        for i in range(len(lista)):
+            for j in range(0,len(lista) -1 - i):
+                if lista[j][1] > lista[j + 1][1]:
+                    lista[j], lista[j + 1] = lista[j + 1], lista[j]
+
+        resultado[titulo] = lista[:5]
+
+    return resultado
+
+
 
 
 def renderizar_puntajes(pantalla:pg.Surface, fuente:pg.font.Font, puntajes:dict, color:tuple, dimensiones:dict) -> None:
@@ -428,36 +447,24 @@ def renderizar_puntajes(pantalla:pg.Surface, fuente:pg.font.Font, puntajes:dict,
     Retorna:
         Nada.
     """
-    
-    ancho_pantalla = dimensiones["ancho"]
-    alto_pantalla = dimensiones["alto"]
-
 
     posiciones_x = [
-        ancho_pantalla * 0.2,       
-        ancho_pantalla *0.5,       
-        ancho_pantalla * 0.8      
+        dimensiones["ancho"] * 0.2,       
+        dimensiones["ancho"] * 0.5,       
+        dimensiones["ancho"] * 0.8      
     ]
 
     titulos = ["Facil", "Medio", "Dificil"]
 
-    y_inicial = alto_pantalla *0.45
-    espacio_entre_lineas = 40
+    y_inicial = dimensiones["alto"] *0.45
+    espacio_entre_lineas = dimensiones["alto"] * 0.07
 
     for i in range(len(titulos)):
         titulo = titulos[i]
         x = posiciones_x[i]
         lista = puntajes.get(titulo, [])
-
-        for i in range(len(lista)):
-            for j in range(0,len(lista) -1 - i):
-                if lista[j][1] > lista[j + 1][1]:
-                    lista[j], lista[j + 1] = lista[j + 1], lista[j]
-
-        top5 = lista[:5]    #chequear esto
-
-        for j in range(len(top5)):
-            nombre, puntaje = top5[j]
+        for j in range(len(lista)):
+            nombre, puntaje = lista[j]
             texto = f"{nombre}: {puntaje}"
             superficie_texto = fuente.render(texto, True, color)
             rect = superficie_texto.get_rect(center=(x, y_inicial + j * espacio_entre_lineas))
@@ -475,14 +482,14 @@ def renderizar_input(usuario:pg.Surface, dimensiones:dict) -> pg.Rect:
         boton_rect (pygame Rect): Retorna un Rect que se utilizara como input.
     """
     
-    ancho_boton = max(usuario.get_width() + 20, 200)  # VER UTILIZACION DE MAX SI LES PARECE BIEN
+    ancho_boton = max(usuario.get_width() + 20, 200)
     alto_boton = dimensiones["alto"] // 10
     boton_rect = pg.Rect(dimensiones["ancho"] // 2 - ancho_boton // 2, dimensiones["ancho"] * 0.50, ancho_boton, alto_boton)
 
     return boton_rect
 
 
-def cronometrar_juego(timers:dict) -> int:  # VERIFICAR SI LO QUE RETORNA ES UN ENTERO
+def cronometrar_juego(timers:dict) -> int:
 
     """
     Verifica el tiempo que paso desde el arranque de la partida hasta que se pierde o se gana, y lo retorna.

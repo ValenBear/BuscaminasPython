@@ -40,6 +40,7 @@ EN_MENU = "en_menu"
 RECT = "rect"
 BANDERA = "bandera"
 VALOR = "valor"
+tablero = {}
 
 
 #SCREENS
@@ -75,3 +76,6 @@ timers = {
 
 #Texto
 texto_ingresado = ""
+
+#Sonido
+volumen_sonido = 0.2
