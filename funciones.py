@@ -99,7 +99,7 @@ def contar_y_revelar_celda(tablero:dict, i:int , j:int, pantalla:pg.Surface, col
     if matriz[i][j]["revelada"] == True:
         retorno = matriz[i][j]["valor"]
     elif matriz[i][j]["valor"] == "X":
-        pg.draw.rect(pantalla, color_relleno, celda_rect)    
+        pg.draw.rect(pantalla, colores_cuenta_minas[2], celda_rect)    
         pg.draw.rect(pantalla, color_borde, celda_rect, 1)            
         bomba_escalada = pg.transform.scale(bomba, (tablero["datos"]["alto_celda"] * 0.75, tablero["datos"]["alto_celda"] * 0.75))
         pantalla.blit(bomba_escalada, (celda_rect.x + celda_rect.w // 2 - bomba_escalada.get_width() // 2, celda_rect.y  + celda_rect.h // 2 - bomba_escalada.get_height() // 2))
@@ -274,7 +274,7 @@ def centrar_en_boton(pantalla:pg.Surface, relleno:pg.Surface, boton:pg.Rect) -> 
     pantalla.blit(relleno, (boton.x + boton.w // 2 - relleno.get_width() // 2, boton.y  + boton.h // 2 - relleno.get_height() // 2)) 
 
 
-def icono_y_texto_en_boton(pantalla:pg.Surface, tablero:pg.Surface, icono:pg.Surface, boton:pg.Rect, color:tuple) -> None:
+def poner_icono_y_texto_en_boton(pantalla:pg.Surface, tablero:pg.Surface, icono:pg.Surface, boton:pg.Rect, color:tuple) -> None:
 
     """
     Pone en un boton un icono y un texto
@@ -349,7 +349,7 @@ def verificar_victoria(tablero:dict) -> bool:
     return retorno
 
 
-def mostrar_bombas(tablero:dict,bomba:pg.Surface, pantalla:pg.Surface, color_borde:tuple, color_relleno:tuple) -> None:
+def mostrar_bombas(tablero:dict,bomba:pg.Surface, pantalla:pg.Surface, color_borde:tuple, color_relleno:tuple, click_i, click_j) -> None:
 
     """
     En caso de derrota muestra todas las bombas.
@@ -365,13 +365,14 @@ def mostrar_bombas(tablero:dict,bomba:pg.Surface, pantalla:pg.Surface, color_bor
 
     for i in range(len(tablero["matriz"])):
         for j in range(len(tablero["matriz"][i])):
-            valor_bomba = tablero["matriz"][i][j]
-            if valor_bomba["valor"] == "X":
-                rect = valor_bomba["rect"]
-                pg.draw.rect(pantalla, color_relleno, rect) 
-                pg.draw.rect(pantalla, color_borde, rect, 1)  
-                bomba_escalada = pg.transform.scale(bomba, (tablero["datos"]["alto_celda"] * 0.75, tablero["datos"]["alto_celda"] * 0.75))
-                pantalla.blit(bomba_escalada, (rect.x + rect.w // 2 - bomba_escalada.get_width() // 2,rect.y + rect.h // 2 - bomba_escalada.get_height() // 2))
+            if i != click_i or j != click_j:
+                valor_bomba = tablero["matriz"][i][j]  
+                if valor_bomba["valor"] == "X":
+                    rect = valor_bomba["rect"]
+                    pg.draw.rect(pantalla, color_relleno, rect) 
+                    pg.draw.rect(pantalla, color_borde, rect, 1)  
+                    bomba_escalada = pg.transform.scale(bomba, (tablero["datos"]["alto_celda"] * 0.75, tablero["datos"]["alto_celda"] * 0.75))
+                    pantalla.blit(bomba_escalada, (rect.x + rect.w // 2 - bomba_escalada.get_width() // 2,rect.y + rect.h // 2 - bomba_escalada.get_height() // 2))
 
 
 def reiniciar_temporizador(timers:dict) -> None:
@@ -384,11 +385,13 @@ def reiniciar_temporizador(timers:dict) -> None:
         Nada.
     """
 
-    for tiempo in timers:
-        timers[tiempo] = 0
+    claves = list(timers)
+
+    for i in range(len(claves)):
+        timers[claves[i]] = 0
     
 
-def obtener_puntajes_por_dificultad() -> dict:
+def obtener_puntajes_por_dificultad(archivo:str) -> dict:
     
     """
     Busca en un archivo ".csv" los distintos puntajes y nombres y lo retorna en un diccionario.
@@ -400,43 +403,47 @@ def obtener_puntajes_por_dificultad() -> dict:
     
     resultado = {"Facil": [], "Medio": [], "Dificil": []}
 
-    with open("puntajes.csv", "r") as puntajes:
-        next(puntajes)
-        for linea in puntajes:
-            nombre, dificultad, puntaje = linea.strip().split(",")
-            puntaje = int(puntaje)
-            if dificultad in resultado:
-                resultado[dificultad].append((nombre, puntaje ))
+    with open(archivo, "r") as puntajes:
+        lineas = puntajes.readlines()
+        for i in range(1, len(lineas)):
+            linea = lineas[i].strip()
+            partes = linea.split(",")
+            nombre = partes[0]
+            dificultad = partes[1]
+            puntaje = int(partes[2])
+            dificultades = list(resultado)
+            
+            for j in range(len(dificultades)):
+                if dificultad == dificultades[j]:
+                    resultado[dificultad].append((nombre, puntaje ))
 
     return resultado
 
 
-def hacer_top_puntajes(puntajes:dict) -> dict:
-
+def ordenar_tops(puntajes:dict, ascendente:bool=False) -> dict:
     """
-    Arma un diccionario con los distintos tops segun dificultad.
-    Parametro:
-        puntajes (dict): diccionario con los puntajes (Nombre,Dificultad,Puntaje).
+    Arma y ordena un diccionario con los distintos tops según dificultad y retorna los mejores 5 de cada dificultad.
+    Parametros:
+            puntajes (dict): diccionario con los puntajes (Nombre, Dificultad, Puntaje).
+            ascendente (bool): recibe un booleano según el orden, ya sea ascendente = True o descendente = False
     Retorna:
-        resultado (dict): diccionario con las 3 listas distintas de puntajes segundo dificultad.
+            resultado (dict): diccionario con las 3 listas distintas de puntajes según dificultad.
     """
 
-    titulos = ["Facil", "Medio", "Dificil"]
+    dificultades = list(puntajes)
     resultado = {}
 
-    for i in range(len(titulos)):
-        titulo = titulos[i]
-        lista = puntajes.get(titulo, [])
-
-        for i in range(len(lista)):
-            for j in range(0,len(lista) -1 - i):
-                if lista[j][1] > lista[j + 1][1]:
-                    lista[j], lista[j + 1] = lista[j + 1], lista[j]
-
-        resultado[titulo] = lista[:5]
-
+    for i in range(len(dificultades)):
+        dificultad = dificultades[i]
+        lista = puntajes[dificultad]
+        for i in range(len(lista) - 1):
+            for j in range(i + 1, len(lista)):
+                if (ascendente == True and lista[i][1] > lista[j][1]) or (ascendente == False and lista[i][1] < lista[j][1]):
+                        aux = lista[i]
+                        lista[i] = lista[j]
+                        lista[j] = aux
+        resultado[dificultad] = lista[:5]
     return resultado
-
 
 
 
@@ -468,9 +475,10 @@ def renderizar_puntajes(pantalla:pg.Surface, fuente:pg.font.Font, puntajes:dict,
     for i in range(len(titulos)):
         titulo = titulos[i]
         x = posiciones_x[i]
-        lista = puntajes.get(titulo, [])
+        lista = puntajes[titulo]
         for j in range(len(lista)):
-            nombre, puntaje = lista[j]
+            nombre = lista[j][0]
+            puntaje = lista[j][1]
             texto = f"{nombre}: {puntaje}"
             superficie_texto = fuente.render(texto, True, color)
             rect = superficie_texto.get_rect(center=(x, y_inicial + j * espacio_entre_lineas))
@@ -478,7 +486,6 @@ def renderizar_puntajes(pantalla:pg.Surface, fuente:pg.font.Font, puntajes:dict,
 
 
 def renderizar_input(usuario:pg.Surface, dimensiones:dict) -> pg.Rect:
-    
     """
     Renderiza un Rect con un ancho minimo que crece si lo que ingresa el usuario es mas largo.
     Parametro:
@@ -488,7 +495,10 @@ def renderizar_input(usuario:pg.Surface, dimensiones:dict) -> pg.Rect:
         boton_rect (pygame Rect): Retorna un Rect que se utilizara como input.
     """
     
-    ancho_boton = max(usuario.get_width() + 20, 200)
+    if usuario.get_width() + 20 <= 200:
+        ancho_boton = 200
+    else:
+        ancho_boton = usuario.get_width() + 20
     alto_boton = dimensiones["alto"] // 10
     boton_rect = pg.Rect(dimensiones["ancho"] // 2 - ancho_boton // 2, dimensiones["ancho"] * 0.50, ancho_boton, alto_boton)
 
@@ -517,3 +527,27 @@ def cronometrar_juego(timers:dict) -> int:
                 tiempo = (timers["tiempo_derrota"] - timers["tiempo_arranque"]) // 1000
 
     return tiempo
+
+
+def guardar_ganador(ganador:list, dict_puntajes:dict, dificultad:str, archivo:str)-> None:
+    nombre_existente = False
+    for i in range(len(dict_puntajes[dificultad])):
+        persona = tuple([dict_puntajes[dificultad][i][0], dict_puntajes[dificultad][i][1]])
+        if persona[0] == ganador[0]:
+            nombre_existente = True
+            if ganador[2] > persona[1]: 
+                dict_puntajes[dificultad][i] = tuple(ganador[0], ganador[2])
+            break
+    if nombre_existente == False:
+        dict_puntajes[dificultad].append((ganador[0], ganador[2]))
+
+    with open(archivo , "w") as puntajes:
+        puntajes.write("NOMBRE,DIFICULTAD,PUNTAJE\n")
+        dificultades = list(dict_puntajes)
+        for i in range(len(dificultades)):
+            dificultad_top = dict_puntajes[dificultades[i]]
+            for j in range(len(dificultad_top)):
+                linea = dificultad_top[j]
+                nombre = linea[0]
+                puntaje = linea[1]
+                puntajes.write(f"{nombre},{dificultades[i]},{puntaje}\n")

@@ -9,6 +9,8 @@ mixer.init()
 pantalla = pg.display.set_mode((DIMENSIONES[ANCHO], DIMENSIONES[ALTO]))
 pg.display.set_caption(TITULO) 
 
+# Archivo ganadores
+archivo = 'puntajes.csv'
 
 #Imagenes
 fondo_inicio = pg.transform.scale(pg.image.load("img/fondo-inicio.png"), (DIMENSIONES[ANCHO], DIMENSIONES[ALTO]))
@@ -90,10 +92,10 @@ sonido_derrota = mixer.Sound('./sonidos/sonido_derrota.mp3')
 sonido_victoria = mixer.Sound('./sonidos/sonido_victoria.mp3')
 sonido_juego.play()
 sonido_juego.set_volume(volumen_sonido)
+sonido_victoria.set_volume(volumen_sonido)
+sonido_derrota.set_volume(volumen_sonido)
 
-
-dict_puntajes = obtener_puntajes_por_dificultad()
-    
+dict_puntajes = obtener_puntajes_por_dificultad(archivo)
 
 while corriendo:
     for evento in pg.event.get():
@@ -139,7 +141,7 @@ while corriendo:
                     elif boton_volumen_menos.collidepoint(evento.pos) == True:
                         if volumen_sonido > 0.05:
                             volumen_sonido -= 0.05
-                            volumen_sonido = round(volumen_sonido, 2)   # Usamos Round porque sino nos da muchos decimales y no funciona el > 0.05
+                            volumen_sonido = round(volumen_sonido, 2)
                         sonido_juego.set_volume(volumen_sonido)
                     elif boton_volumen_mas.collidepoint(evento.pos) == True:
                         if volumen_sonido < 0.4:
@@ -211,7 +213,7 @@ while corriendo:
                                         timers[TIEMPO_ARRANQUE] = pg.time.get_ticks()
                                     celda[VALOR] = contar_y_revelar_celda(tablero, i , j, pantalla, GRIS_CLARO, GRIS_OSCURO, bomba)                                    
                                     if tablero[DATOS][ESTADO_PARTIDA] == DERROTA:
-                                        mostrar_bombas(tablero, bomba, pantalla, NEGRO, ROJO)
+                                        mostrar_bombas(tablero, bomba, pantalla, GRIS_OSCURO, GRIS_CLARO, i, j)
                                         timers[TIEMPO_DERROTA] = pg.time.get_ticks()
                                         sonido_derrota.play()
                                     if verificar_victoria(tablero) and primer_click:
@@ -232,30 +234,13 @@ while corriendo:
                     texto_ingresado = texto_ingresado[0:-1]
 
                 elif evento.key == pg.K_RETURN or evento.key == pg.K_KP_ENTER:
-                    ganador = [texto_ingresado, dificultad, timers[TIEMPO_TRANSCURRIDO]]
-                    nombre_existente = False
-                    for i in range(len(dict_puntajes[dificultad])):
-                        nombre, puntaje = dict_puntajes[dificultad][i]
-                        if nombre == texto_ingresado:
-                            nombre_existente = True
-                            if ganador[2] < puntaje: 
-                                dict_puntajes[dificultad][i] = (texto_ingresado, ganador[2])
-                            break
-                    if not nombre_existente:
-                        dict_puntajes[dificultad].append((texto_ingresado, ganador[2]))
-
-                    with open("puntajes.csv", "w") as archivo:
-                        archivo.write("NOMBRE,DIFICULTAD,PUNTAJE\n")
-                        for dificultad_top in dict_puntajes:
-                            for nombre, puntaje in dict_puntajes[dificultad_top]:
-                                archivo.write(f"{nombre},{dificultad_top},{puntaje}\n")
-
+                    ganador = [texto_ingresado, dificultad,puntaje_final]
+                    guardar_ganador(ganador,dict_puntajes,dificultad,archivo)
                     pantalla_actual = INICIO_SCREEN
                     primer_click = False
                     tablero[DATOS][ESTADO_PARTIDA] = EN_MENU
                     reiniciar_temporizador(timers)
                     texto_ingresado = ""
-
                 else:
                     if len(texto_ingresado) < 10:
                         texto_ingresado += evento.unicode
@@ -282,6 +267,12 @@ while corriendo:
         timer = fuente_titulo.render(str(timers[TIEMPO_TRANSCURRIDO]), True, NEGRO)
         usuario = fuente.render(str(texto_ingresado), True, NEGRO)
         
+        timers[TIEMPO_TRANSCURRIDO] = cronometrar_juego(timers)
+
+        if timers[TIEMPO_TRANSCURRIDO] > 0:
+            puntaje_final = PUNTAJE_BASE // timers[TIEMPO_TRANSCURRIDO]
+            puntaje_render = fuente_titulo.render(str(puntaje_final), True, NEGRO)
+        
         dibujar_boton(pantalla, boton_volver_juego, GRIS_CLARO)
         dibujar_boton(pantalla, boton_facil, GRIS_CLARO)
         dibujar_boton(pantalla, boton_medio, GRIS_CLARO)
@@ -291,7 +282,7 @@ while corriendo:
         dibujar_boton(pantalla, boton_timer, GRIS_CLARO)
 
 
-        icono_y_texto_en_boton(pantalla, tablero, bandera, boton_banderas, NEGRO)
+        poner_icono_y_texto_en_boton(pantalla, tablero, bandera, boton_banderas, NEGRO)
         centrar_en_boton(pantalla, volver, boton_volver_juego)
         centrar_en_boton(pantalla, facil, boton_facil)
         centrar_en_boton(pantalla, medio, boton_medio)
@@ -299,16 +290,17 @@ while corriendo:
         centrar_en_boton(pantalla, reiniciar, boton_reiniciar)
         centrar_en_boton(pantalla, timer, boton_timer)
 
-        timers[TIEMPO_TRANSCURRIDO] = cronometrar_juego(timers)
+
+
 
         if tablero[DATOS][ESTADO_PARTIDA] == VICTORIA:
             pantalla.blit(fondo_victoria, (0,0))
-            pantalla.blit(timer, (DIMENSIONES[ANCHO] * 0.5 - timer.get_width() * 0.5, DIMENSIONES[ALTO] * 0.575 - timer.get_height() * 0.5)) 
+            pantalla.blit(puntaje_render, (DIMENSIONES[ANCHO] * 0.5 - puntaje_render.get_width() * 0.5, DIMENSIONES[ALTO] * 0.575 - puntaje_render.get_height() * 0.5)) 
             boton_input = renderizar_input(usuario, DIMENSIONES)
             dibujar_boton(pantalla, boton_input, CREMA_RELLENO)
             pg.draw.rect(pantalla, CREMA_BORDE, boton_input, 2, 10)
             centrar_en_boton(pantalla, usuario, boton_input)
-        
+
 
     elif pantalla_actual == CONFIGURACION_SCREEN:
 
@@ -331,16 +323,13 @@ while corriendo:
         centrar_en_boton(pantalla, volver, boton_volver)
 
         
-
-
-
     elif pantalla_actual == PUNTAJES_SCREEN:
         
         pantalla.blit(fondo_puntajes, (0,0))
 
         dibujar_boton(pantalla, boton_volver, GRIS_CLARO)
         centrar_en_boton(pantalla, volver, boton_volver)
-        tops = hacer_top_puntajes(dict_puntajes)
+        tops = ordenar_tops(dict_puntajes)
         renderizar_puntajes(pantalla,fuente_puntajes,tops,NEGRO,DIMENSIONES)
 
         
