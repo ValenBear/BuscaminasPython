@@ -405,18 +405,18 @@ def obtener_puntajes_por_dificultad(archivo:str) -> dict:
 
     with open(archivo, "r") as puntajes:
         lineas = puntajes.readlines()
-        for i in range(1, len(lineas)):
-            linea = lineas[i].strip()
-            partes = linea.split(",")
-            nombre = partes[0]
-            dificultad = partes[1]
-            puntaje = int(partes[2])
-            dificultades = list(resultado)
-            
-            for j in range(len(dificultades)):
-                if dificultad == dificultades[j]:
-                    resultado[dificultad].append((nombre, puntaje ))
-
+    for i in range(1, len(lineas)):
+        linea = lineas[i].strip()
+        partes = linea.split(",")
+        nombre = partes[0]
+        dificultad = partes[1]
+        puntaje = int(partes[2])
+        dificultades = list(resultado)
+        
+        for j in range(len(dificultades)):
+            if dificultad == dificultades[j]:
+                resultado[dificultad].append((nombre, puntaje ))
+    
     return resultado
 
 
@@ -536,7 +536,8 @@ def guardar_ganador(ganador:list, dict_puntajes:dict, dificultad:str, archivo:st
         if persona[0] == ganador[0]:
             nombre_existente = True
             if ganador[2] > persona[1]: 
-                dict_puntajes[dificultad][i] = tuple(ganador[0], ganador[2])
+                dict_puntajes[dificultad][i] = tuple([ganador[0], ganador[2]])
+                #dict_puntajes[dificultad][i] = tuple(ganador[0], ganador[2])
             break
     if nombre_existente == False:
         dict_puntajes[dificultad].append((ganador[0], ganador[2]))

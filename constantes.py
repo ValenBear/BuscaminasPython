@@ -21,7 +21,7 @@ dificultad = FACIL
 #Dimensiones
 ANCHO = "ancho"
 ALTO = "alto"
-DIMENSIONES = {ANCHO: 800, ALTO: 600}
+DIMENSIONES = {ANCHO: 1200, ALTO: 900}
 
 
 #Tablero

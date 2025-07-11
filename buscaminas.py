@@ -263,8 +263,13 @@ while corriendo:
 
 
     elif pantalla_actual == JUEGO_SCREEN:
-        
-        timer = fuente_titulo.render(str(timers[TIEMPO_TRANSCURRIDO]), True, NEGRO)
+                
+        minutos = timers[TIEMPO_TRANSCURRIDO] // 60
+        segundos = timers[TIEMPO_TRANSCURRIDO] - (minutos * 60)
+        if segundos < 10:
+            segundos = "0" + str(segundos)
+
+        timer = fuente_titulo.render(str(f"{minutos}:{segundos}"), True, NEGRO)
         usuario = fuente.render(str(texto_ingresado), True, NEGRO)
         
         timers[TIEMPO_TRANSCURRIDO] = cronometrar_juego(timers)
